@@ -32,6 +32,7 @@ def neuron(x, w, func):
     '''Oblicza wyjście dla pojedynczego neuronu'''
     e = sum(x * w)
     return (e, func(e))
+    # return func(e)
 
 def loss(z, y):
     '''Oblicza błąd w danej serii danych'''
@@ -52,7 +53,7 @@ def update_weights(x, w, func, l, e):
 
 n = 200  # liczba neuronów
 lr = 0.1   # learning rate
-epoch_n = 1000   # liczba epok
+epoch_n = 200   # liczba epok
 
 wines = load_data('wine.csv')
 P = normalize(wines[:, 1:])
@@ -67,6 +68,7 @@ s_max, s_std = [], []
 for i in range(epoch_n):
     predicted, ep_l = [], []
     for x, z in zip(P, T):
+        # y = np.array([neuron(x, w, sigmoid) for w in w1])
         ey, y = [], []
         for w in w1:
             a, b = neuron(x, w, sigmoid)
@@ -75,19 +77,16 @@ for i in range(epoch_n):
         y = np.array(y)
         ey = np.array(ey)
 
-        # y = np.fromiter((neuron(x, w, sigmoid) for w in w1), float)
-        # ey = y[:,0]
-        # t = y[:,1]
-
+        # Y = neuron(y, w2, sigmoid)
         eY, Y = neuron(y, w2, sigmoid)
 
         L = loss(z, Y)
         l1 = calc_neuron_loss(L, w2)
 
-        w1 = np.array([update_weights(x, w1[j], sigmoid_der, l1[j], y[j]) for j in range(n)])
-        # w1 = np.array([update_weights(x, w1[j], sigmoid_der, l1[j], ey[j]) for j in range(n)])
-        w2 = update_weights(y, w2, sigmoid_der, L, Y)
-        # w2 = update_weights(y, w2, sigmoid_der, L, eY)
+        # w1 = np.array([update_weights(x, w1[j], sigmoid_der, l1[j], y[j]) for j in range(n)])
+        w1 = np.array([update_weights(x, w1[j], sigmoid_der, l1[j], ey[j]) for j in range(n)])
+        # w2 = update_weights(y, w2, sigmoid_der, L, Y)
+        w2 = update_weights(y, w2, sigmoid_der, L, eY)
 
         predicted.append(Y)
         ep_l.append(L)
@@ -100,7 +99,7 @@ for i in range(epoch_n):
     print(f'Epoka #{i:02d} ({np.abs(s).max():.10f}) [{s.std():.10f}]', end='\r')
 
 
-print(f'\nCzas uczenia: {(time()-start_time)/1000} sekund')
+print(f'\nCzas uczenia: {(time()-start_time)} sekund')
 
 plt.plot(T)
 plt.plot(predicted)
