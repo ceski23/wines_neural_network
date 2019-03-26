@@ -5,7 +5,7 @@ from random import randrange
 
 np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
 np.seterr('raise')
-np.random.seed(123)
+# np.random.seed(123)
 
 def load_zoo():
     with open('zoo.csv') as f:
@@ -15,16 +15,20 @@ def load_zoo():
         T = animals[:, -1]
     return (P, T)
 
-def load_wine():
+def load_wine(test_perc):
     with open('wine.csv') as f:
-        wines = []
-        for x in f:
-            x = x.strip().split(',')
-            wines.append(list(map(float, x)))
-        wines = np.array(wines)
-        P = normalize(wines[:, 1:])
-        T = wines[:, 0]
-    return (P, T)
+        wines = np.array([list(map(float, x.strip().split(','))) for x in f])
+        np.random.shuffle(wines)
+        a = int((wines.shape[0] / 100) * test_perc)
+
+        test_wines = wines[:a]
+        test_wines = test_wines[test_wines[:,1].argsort()]
+        testing_data = (normalize(test_wines[:, 1:]), test_wines[:, 0])
+
+        wines = wines[a:]
+        wines = wines[wines[:,1].argsort()]
+        learning_data = (normalize(wines[:, 1:]), wines[:, 0])
+    return (learning_data, testing_data)
 
 def normalize(data, min_v=0, max_v=1):
     '''Normalizuje dane do podanego zakresu'''
@@ -32,15 +36,10 @@ def normalize(data, min_v=0, max_v=1):
 
 
 if __name__ == "__main__":
-    P, T = load_wine()
+    learning_data, testing_data = load_wine(test_perc=20)
     
-    # idxs = list(set(randrange(0, P.shape[0]) for _ in range(21)))
-    # X, Y = P[idxs], T[idxs]
-    # P = np.delete(P, idxs, 0)
-    # T = np.delete(T, idxs)
-    
-    net = nn.NeuralNetwork(n=20, lr=0.5, epoch_n=400, hidden_size=10)
-    net.feed_training_data(P, T)
+    net = nn.NeuralNetwork(n=26, lr=0.5, epoch_n=200, hidden_size=12)
+    net.feed_training_data(*learning_data)
     net.start_learning(live_plot=True)
     net.save_model('wine.model')
     # net.load_model('wine.model')

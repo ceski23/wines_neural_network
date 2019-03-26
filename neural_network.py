@@ -97,6 +97,9 @@ class NeuralNetwork:
             else:
                 print(f'Epoka #{epoch:02d} ({stats.max():.10f})', end='\r')
         
+        if not live_plot:
+            plt.plot(prediction)
+            plt.plot(self.T)
         plt.show()
 
     def save_model(self, path):
