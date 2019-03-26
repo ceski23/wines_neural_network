@@ -39,12 +39,18 @@ if __name__ == "__main__":
     # P = np.delete(P, idxs, 0)
     # T = np.delete(T, idxs)
     
-    net = nn.NeuralNetwork(n=20, lr=0.3, epoch_n=12)
+    net = nn.NeuralNetwork(n=20, lr=0.5, epoch_n=400, hidden_size=10)
     net.feed_training_data(P, T)
     net.start_learning(live_plot=True)
     net.save_model('wine.model')
+    # net.load_model('wine.model')
 
-    # y = [net.predict(x) for x in X]
+    # y = [net.predict(x) for x in P]
     # plt.plot(y)
-    # plt.plot(Y)
+    # plt.plot(T)
     # plt.show()
+
+
+# Potencjał:
+# 20, 0.1, 1000, 20
+# 20, 0.5, 1000, 10
