@@ -2,19 +2,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 from time import time
 import pickle
+import math
 
 
 class NeuralNetwork:
-    def __init__(self, n, lr, epoch_n, hidden_size):
-        self.n = n
+    def __init__(self, lr, epoch_n, hidden, err_ratio, lr_inc, lr_dec, goal):
         self.lr = lr
         self.epoch_n = epoch_n
-        self.hidden_size = hidden_size
+        self.hidden = hidden
+        self.err_ratio = err_ratio
+        self.lr_inc = lr_inc
+        self.lr_dec = lr_dec
+        self.goal = goal
     
     def feed_training_data(self, P, T):
         self.P = P
         self.T = T
     
+    def feed_test_data(self, P, T):
+        self.test_P = P
+        self.test_T = T
+
     def sigmoid(self, x, derivative=False):
         '''Zwraca wartość funkcji sigmoidalnej dla danego x'''
         if derivative:
@@ -26,10 +34,9 @@ class NeuralNetwork:
     def linear(self, x, derivative=False):
         return 1 if derivative else x
 
-    def neuron(self, x, w, func):
+    def neuron(self, x, w):
         '''Oblicza wyjście dla pojedynczego neuronu'''
-        e = sum(x * w)
-        return (func(e), e)
+        return sum(x * w)
 
     def loss(self, z, y):
         '''Oblicza błąd w danej serii danych'''
@@ -44,68 +51,106 @@ class NeuralNetwork:
         d = self.lr * l * func(e, True) * x
         return w + d
     
-    def predict(self, P):
-        y = np.array([self.neuron(P, w, self.sigmoid)[0] for w in self.weights_1])
-        y1 = np.array([self.neuron(y, w, self.sigmoid)[0] for w in self.weights_h1])
-        Y = self.neuron(y1, self.weights_2, self.linear)[0]
+    def init_weights(self):
+        self.weights = []
 
-        return Y
+        sizes = [self.P.shape[1], *self.hidden, 1]
+        for i in range(1, len(sizes)):
+            self.weights.append(np.random.rand(sizes[i], sizes[i-1]))
     
-    def start_learning(self, live_plot=False):
-        if live_plot:
-            plt.plot(self.T)
-            plt.grid()
-            axes = plt.gca()
-            line, = axes.plot([], [], 'r-')
-            axes.set_ylim(min(self.T)-1, max(self.T)+1)
-            line.set_xdata(range(self.T.shape[0]))
+    def predict(self, x):
+        y = [x]
+        for i in range(len(self.weights)):
+            func = self.linear if i == len(self.weights) - 1 else self.sigmoid
+            out_e = np.array([self.neuron(y[i], w) for w in self.weights[i]])
+            y.append(func(out_e))
 
-        self.weights_1 = np.random.rand(self.n, self.P.shape[1])
-        self.weights_h1 = np.random.rand(self.hidden_size, self.n)
-        self.weights_2 = np.random.rand(self.hidden_size)
+        return y[-1][0]
+    
+    def start_learning(self, live_plot=False, plot_interval=1):
+        if live_plot:
+            plt.plot(self.test_T)
+            plt.grid(linestyle='--')
+            axes = plt.gca()
+            axes.set_yticks(np.arange(min(self.test_T), max(self.test_T), 0.25), minor=True)
+            line, = axes.plot([], [], 'r-')
+            line.set_xdata(range(self.test_T.shape[0]))
+
+        self.init_weights()
+
+        mses, last_weights = [], []
+        backup = {'weights': None, 'mse': math.inf, 'epoch': -1}
 
         for epoch in range(self.epoch_n):
-            epoch_loss, prediction = [], []
             for x, z in zip(self.P, self.T):
-                y = np.array([self.neuron(x, w, self.sigmoid) for w in self.weights_1])
-                ey, y = y[:,1], y[:,0]
+                y, e = [x], []
 
-                y1 = np.array([self.neuron(y, w, self.sigmoid) for w in self.weights_h1])
-                ey1, y1 = y1[:,1], y1[:,0]
-                
-                Y, eY = self.neuron(y1, self.weights_2, self.linear)
+                for i in range(len(self.weights)):
+                    func = self.linear if i == len(self.weights) - 1 else self.sigmoid
+                    out_e = np.array([self.neuron(y[i], w) for w in self.weights[i]])
+                    y.append(func(out_e))
+                    e.append(out_e)
+
+                errors = [self.loss(z, y[-1])]
+                for layer_idx in range(len(self.weights)-1, 0, -1):
+                    layer_error = [sum(self.calc_neuron_loss(errors[0], w)) for w in self.weights[layer_idx].T]
+                    errors.insert(0, layer_error)
+
+                for i in range(len(self.weights)):
+                    func = self.linear if i == len(self.weights) - 1 else self.sigmoid
+                    for j in range(len(self.weights[i])):
+                        self.weights[i][j] = self.update_weights(y[i], self.weights[i][j], func, errors[i][j], e[i][j])
 
 
-                L = self.loss(z, Y)
-                lh = self.calc_neuron_loss(L, self.weights_2)
-                l1 = np.array([sum(self.calc_neuron_loss(lh, self.weights_h1[:,i])) for i in range(self.weights_1.shape[0])])
+            prediction = [self.predict(x) for x in self.test_P]
+            loss = [self.loss(z, y) for z, y in zip(prediction, self.test_T)]
+            mse = max([0.5 * (l**2) for l in loss])
+            mses.append(mse)
 
+            if mse <= self.goal:
+                print(f'Achieved goal with MSE: {mse}')
+                break
 
-                self.weights_1 = np.array([self.update_weights(x, self.weights_1[j], self.sigmoid, l1[j], ey[j]) for j in range(self.n)])
-                self.weights_h1 = np.array([self.update_weights(y, self.weights_h1[j], self.sigmoid, lh[j], ey1[j]) for j in range(self.hidden_size)])
-                self.weights_2 = self.update_weights(y1, self.weights_2, self.linear, L, eY)
+            if len(mses) >= 2:
+                if mses[-1] > mses[-2]*self.err_ratio:
+                    self.lr *= self.lr_dec
+                    self.weights = last_weights
+                elif mses[-1] < mses[-2]: #*(2 - self.err_ratio):
+                    self.lr *= self.lr_inc
 
-                epoch_loss.append(L)
-                prediction.append(Y)
+            last_weights = self.weights
 
-            stats = np.abs(np.array(epoch_loss))
-            if live_plot:
+            if mse < backup['mse']:
+                backup['mse'] = mse
+                backup['weights'] = self.weights
+                backup['epoch'] = epoch
+
+            if live_plot and not epoch % plot_interval:
                 line.set_ydata(prediction)
-                axes.set_title(f'Epoka #{epoch}\nSTD: {stats.std():2.10f}   MAX: {stats.max():2.10f}')
+                axes.set_title(f'Epoka #{epoch}\nMSE: {mse:2.10f} \n LR: {self.lr}')
                 plt.draw()
-                plt.pause(1e-17)
-            else:
-                print(f'Epoka #{epoch:02d} ({stats.max():.10f})', end='\r')
+                plt.pause(1e-20)
+            
+            if not live_plot:
+                print(f'Epoka #{epoch:02d} MSE: {mse:2.10f}', end='\r')
         
         if not live_plot:
             plt.plot(prediction)
-            plt.plot(self.T)
+            plt.plot(self.test_T)
+
+        plt.figure()
+        plt.plot(mses)
         plt.show()
 
-    def save_model(self, path):
+        self.save_model('backup.model', backup['weights'])
+        print(f'Saved backup model with score {backup["mse"]} from #{backup["epoch"]} epoch')
+
+    def save_model(self, path, weights=None):
+        if weights is None:
+            weights = self.weights
         with open(path, 'wb') as f:
-            pickle.dump((self.weights_1, self.weights_h1, self.weights_2), f)
+            pickle.dump(self.weights, f)
     
     def load_model(self, path):
         with open(path, 'rb') as f:
-            self.weights_1, self.weights_h1, self.weights_2 = pickle.load(f)
+            self.weights = pickle.load(f)
