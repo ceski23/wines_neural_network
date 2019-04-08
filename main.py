@@ -56,23 +56,23 @@ if __name__ == "__main__":
     learning_data, testing_data = load_wine(test_count=20)
     
     net = nn.NeuralNetwork(0.2, 2000, [26, 12, 4], 1.04, 1.05, 0.7, 0.020)
-    net.feed_training_data(*learning_data)
-    net.feed_test_data(*testing_data)
-    net.start_learning(live_plot=True)
-    net.save_model('wine.model')
-    # net.load_model('001986_26_12_4_02.model')
+    # net.feed_training_data(*learning_data)
+    # net.feed_test_data(*testing_data)
+    # net.start_learning(live_plot=True)
+    # net.save_model('wine.model')
+    net.load_model('wine/001900_26_12_4_02.model')
 
 
 
-    # P, T = testing_data
-    # prediction = [net.predict(x) for x in P]
-    # loss = [net.loss(z, y) for z, y in zip(prediction, T)]
-    # mse = [0.5 * (l**2) for l in loss]
+    P, T = testing_data
+    prediction = [net.predict(x) for x in P]
+    loss = [net.loss(z, y) for z, y in zip(prediction, T)]
+    mse = [0.5 * (l**2) for l in loss]
 
-    # plt.figure()
-    # plt.grid(linestyle='--')
-    # plt.yticks(np.arange(min(T), max(T), 0.25))
-    # plt.plot(prediction)
-    # plt.plot(T)
-    # plt.title(f'MAX MSE: {max(mse)} \nAVG MSE: {sum(mse)/len(mse)}')
-    # plt.show()
+    plt.figure()
+    plt.grid(linestyle='--')
+    plt.yticks(np.arange(min(T), max(T), 0.25))
+    plt.plot(prediction)
+    plt.plot(T)
+    plt.title(f'MAX MSE: {max(mse)} \nAVG MSE: {sum(mse)/len(mse)}')
+    plt.show()
