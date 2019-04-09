@@ -47,21 +47,20 @@ def normalize(data, min_v=0, max_v=1):
 if __name__ == "__main__":
     learning_data, testing_data = load_wine(test_count=20)
     
-    # net = nn.NeuralNetwork(0.05, 100, [50], 1.04, 1.05, 0.7, 0.020)
     net = nn.NeuralNetwork(0.1, 5000, [16, 12], 1.04, 1.05, 0.7, 0.020)
     # net.feed_training_data(*learning_data)
     # net.feed_test_data(*testing_data)
     # net.start_learning(live_plot=True)
     # net.save_model()
-    net.load_model('models/091876_16_12.mdl')
+    net.load_model('models/BCP_3258__001699_16_12.mdl')
 
 
     plt.figure()
-    for i in range(4):
+    for i in range(12):
         P, T = load_wine(test_count=20)[1]
         prediction, cost = net.test(P, T)
 
-        plt.subplot(2, 2, i+1)
+        plt.subplot(3, 4, i+1)
         plt.grid(linestyle='--')
         plt.yticks(np.arange(min(T), max(T)+0.01, 0.25))
         plt.plot(prediction)

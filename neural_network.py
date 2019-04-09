@@ -38,7 +38,6 @@ class NeuralNetwork:
         sizes = [self.P.shape[1], *self.layers, 1]
         for i in range(1, len(sizes)):
             self.weights.append(np.random.rand(sizes[i], sizes[i-1]))
-            # self.weights.append(np.ones((sizes[i], sizes[i-1])))
 
     def predict(self, x):
         return self.forward(x)[0][-1][0]
@@ -109,9 +108,6 @@ class NeuralNetwork:
                         self.weights[i][j] = self.update_weights(self.weights[i][j], delta[i][j], y[i])
 ##################################################################################################################################
 
-            # prediction = [self.predict(x) for x in self.test_P]
-            # error = [d - y for y, d in zip(prediction, self.test_T)]
-            # cost = max([(e**2) for e in error])
             prediction, cost = self.test(self.test_P, self.test_T)
             self.costs.append(cost)
 ##################################################################################################################################
@@ -129,10 +125,10 @@ class NeuralNetwork:
 
             last_weights = self.weights
 
-            # if cost < backup['cost']:
-            #     backup['cost'] = cost
-            #     backup['weights'] = self.weights
-            #     backup['epoch'] = epoch
+            if cost < backup['cost']:
+                backup['cost'] = cost
+                backup['weights'] = self.weights
+                backup['epoch'] = epoch
 
             if live_plot and not epoch % plot_interval:
                 line.set_ydata(prediction)
@@ -151,5 +147,5 @@ class NeuralNetwork:
         plt.plot(self.costs)
         plt.show()
 
-        # if backup['cost'] != cost:
-        #     self.save_model(f'BCP_{backup["epoch"]}_', backup['weights'])
+        if backup['cost'] != cost:
+            self.save_model(f'BCP_{backup["epoch"]}_', backup['weights'])
