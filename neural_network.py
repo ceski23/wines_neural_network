@@ -28,7 +28,8 @@ class NeuralNetwork:
             f = self.sigmoid(x)
             return f * (1 - f)
         else:
-            return 1 / (1 + (np.e**(-x)))
+            e = np.exp(-x)
+            return 1.0 / (1.0 + e)
     
     def linear(self, x, derivative=False):
         return 1 if derivative else x
@@ -41,7 +42,7 @@ class NeuralNetwork:
 
     def predict(self, x):
         return self.forward(x)[0][-1][0]
-##################################################################################################################################
+
     def forward(self, x):
         '''Oblicza sygnał wyjściowy neuronów'''
         y, ss = [x], []
@@ -62,13 +63,13 @@ class NeuralNetwork:
     def test(self, P, T):
         prediction = [self.predict(x) for x in P]
         error = [d - y for y, d in zip(prediction, T)]
-        cost = max([(e**2) for e in error])
+        cost = sum([(e**2) for e in error])
         return prediction, cost
 
-    def update_weights(self, w, d, x):
-        '''Obliczanie wag dla pojedynczego neuronu'''
-        return w + (2 * self.lr * d * x)
-##################################################################################################################################
+    def update_weights(self, delta, x):
+        for i in range(len(self.layers) + 1):
+            for j in range(len(self.weights[i])):
+                self.weights[i][j] += (2 * self.lr * delta[i][j] * x[i])
   
     def save_model(self, prefix='', weights=None):
         name = f'{self.costs[-1]:.5f}_{"_".join(map(str, self.layers))}'.replace(".", "")
@@ -83,7 +84,7 @@ class NeuralNetwork:
         with open(path, 'rb') as f:
             self.weights, self.layers = pickle.load(f)
     
-    def start_learning(self, live_plot=False, plot_interval=1):
+    def start_learning(self, live_plot=False, plot_interval=1, plot_results=False, live_text=False):
         if live_plot:
             plt.plot(self.test_T)
             plt.grid(linestyle='--')
@@ -96,21 +97,14 @@ class NeuralNetwork:
         self.costs = []
 
         last_weights = []
-        backup = {'weights': None, 'cost': math.inf, 'epoch': -1}
-##################################################################################################################################
         for epoch in range(self.epochs):
             for x, d in zip(self.P, self.T):
                 y, ss = self.forward(x)
                 delta = self.errors(d, y, ss)
-
-                for i in range(len(self.layers) + 1):
-                    for j in range(len(self.weights[i])):
-                        self.weights[i][j] = self.update_weights(self.weights[i][j], delta[i][j], y[i])
-##################################################################################################################################
+                self.update_weights(delta, y)
 
             prediction, cost = self.test(self.test_P, self.test_T)
             self.costs.append(cost)
-##################################################################################################################################
 
             if cost <= self.goal:
                 print(f'Achieved goal with cost: {cost}')
@@ -118,34 +112,25 @@ class NeuralNetwork:
 
             if len(self.costs) >= 2:
                 if self.costs[-1] > self.costs[-2] * self.err_ratio:
-                    self.lr *= self.lr_dec
+                    self.lr = max(1e-5, self.lr * self.lr_dec)
                     self.weights = last_weights
                 elif self.costs[-1] < self.costs[-2]: #*(2 - self.err_ratio):
-                    self.lr *= self.lr_inc
+                    self.lr = min(1 - 1e-5, self.lr * self.lr_inc)
 
             last_weights = self.weights
 
-            if cost < backup['cost']:
-                backup['cost'] = cost
-                backup['weights'] = self.weights
-                backup['epoch'] = epoch
-
             if live_plot and not epoch % plot_interval:
                 line.set_ydata(prediction)
-                axes.set_title(f'Epoka #{epoch}\ncost: {cost:2.10f} \n LR: {self.lr}')
+                axes.set_title(f'Epoka #{epoch}\nCost: {cost:2.10f} \n LR: {self.lr}')
                 plt.draw()
                 plt.pause(1e-20)
             
-            if not live_plot:
-                print(f'Epoka #{epoch:02d} cost: {cost:2.10f}', end='\r')
+            if live_text:
+                print(f'Epoka #{epoch:02d} Cost: {cost:2.10f}', end='\r')
         
-        if not live_plot:
+        if plot_results:
             plt.plot(prediction)
             plt.plot(self.test_T)
 
-        plt.figure()
-        plt.plot(self.costs)
-        plt.show()
-
-        if backup['cost'] != cost:
-            self.save_model(f'BCP_{backup["epoch"]}_', backup['weights'])
+            plt.figure()
+            plt.plot(self.costs)
