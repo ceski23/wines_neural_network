@@ -23,13 +23,12 @@ class NeuralNetwork:
         self.test_T = T
 
     def sigmoid(self, x, derivative=False):
-        '''Zwraca wartość funkcji sigmoidalnej dla danego x'''
-        if derivative:
-            f = self.sigmoid(x)
-            return f * (1 - f)
-        else:
-            e = np.exp(-x)
-            return 1.0 / (1.0 + e)
+        # x[-x < -710.0] = -np.inf
+        # x[-x > 709.78] = np.inf
+        # if np.any(x[x==np.inf]) or np.any(x[x==-np.inf]):
+        #     print('dupa')
+        f = 1.0 / (1.0 + np.exp(-x))
+        return f if not derivative else f * (1 - f)
     
     def linear(self, x, derivative=False):
         return 1 if derivative else x
@@ -39,16 +38,24 @@ class NeuralNetwork:
         sizes = [self.P.shape[1], *self.layers, 1]
         for i in range(1, len(sizes)):
             self.weights.append(np.random.rand(sizes[i], sizes[i-1]))
+            # self.weights.append(np.ones((sizes[i], sizes[i-1])))
+
+    def init_biases(self):
+        self.biases = []
+        layers = [*self.layers, 1]
+        for i, s in enumerate(layers):
+            self.biases.append(np.random.rand(s))
+            # self.biases.append(np.ones((s)))
 
     def predict(self, x):
         return self.forward(x)[0][-1][0]
 
     def forward(self, x):
-        '''Oblicza sygnał wyjściowy neuronów'''
         y, ss = [x], []
         for i in range(len(self.layers) + 1):
             f = self.linear if i == len(self.layers) else self.sigmoid
             s = np.array([sum(y[i] * w) for w in self.weights[i]])      # w - wagi jednego neuronu
+            s += self.biases[i]
             y.append(f(s))
             ss.append(s)
         return y, ss
@@ -66,10 +73,11 @@ class NeuralNetwork:
         cost = sum([(e**2) for e in error])
         return prediction, cost
 
-    def update_weights(self, delta, x):
+    def update_weights_and_biases(self, delta, x):
         for i in range(len(self.layers) + 1):
             for j in range(len(self.weights[i])):
                 self.weights[i][j] += (2 * self.lr * delta[i][j] * x[i])
+                self.biases[i][j] += (self.lr * delta[i][j])
   
     def save_model(self, prefix='', weights=None):
         name = f'{self.costs[-1]:.5f}_{"_".join(map(str, self.layers))}'.replace(".", "")
@@ -94,17 +102,21 @@ class NeuralNetwork:
             line.set_xdata(range(self.test_T.shape[0]))
 
         self.init_weights()
-        self.costs = []
+        self.init_biases()
+        self.costs, self.pks = [], []
 
         last_weights = []
         for epoch in range(self.epochs):
             for x, d in zip(self.P, self.T):
                 y, ss = self.forward(x)
                 delta = self.errors(d, y, ss)
-                self.update_weights(delta, y)
+                self.update_weights_and_biases(delta, y)
 
             prediction, cost = self.test(self.test_P, self.test_T)
             self.costs.append(cost)
+            pk = [abs(x - y) < 0.25 for x, y in zip(prediction, self.test_T)]
+            result = int((sum(pk) / len(pk)) * 100)
+            self.pks.append(result)
 
             if cost <= self.goal:
                 print(f'Achieved goal with cost: {cost}')
@@ -112,10 +124,10 @@ class NeuralNetwork:
 
             if len(self.costs) >= 2:
                 if self.costs[-1] > self.costs[-2] * self.err_ratio:
-                    self.lr = max(1e-5, self.lr * self.lr_dec)
+                    self.lr = max(1e-10, self.lr * self.lr_dec)
                     self.weights = last_weights
                 elif self.costs[-1] < self.costs[-2]: #*(2 - self.err_ratio):
-                    self.lr = min(1 - 1e-5, self.lr * self.lr_inc)
+                    self.lr = min(1 - 1e-10, self.lr * self.lr_inc)
 
             last_weights = self.weights
 
@@ -126,7 +138,7 @@ class NeuralNetwork:
                 plt.pause(1e-20)
             
             if live_text:
-                print(f'Epoka #{epoch:02d} Cost: {cost:2.10f}', end='\r')
+                print(f'Epoka #{epoch:05d}  Cost: {cost:13.10f}  LR: {self.lr:13.10f}  PK: {result:3d}%', end='\r')
         
         if plot_results:
             plt.plot(prediction)
@@ -134,3 +146,6 @@ class NeuralNetwork:
 
             plt.figure()
             plt.plot(self.costs)
+
+            plt.figure()
+            plt.plot(self.pks)
