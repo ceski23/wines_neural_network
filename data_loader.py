@@ -31,11 +31,12 @@ def load_wine(test_count):
         a = int((wines.shape[0] / 100) * test_count)
         wines[:, 1:] = normalize(wines[:, 1:].T).T
 
-        test_wines = wines[:a]
+        test_wines = wines#[:a]
         test_wines = test_wines[test_wines[:,0].argsort()]
         testing_data = (test_wines[:, 1:], test_wines[:, 0])
 
         wines = wines[a:]
-        wines = wines[wines[:,0].argsort()]
+        # wines = wines[wines[:,0].argsort()]
         learning_data = (wines[:, 1:], wines[:, 0])
-    return (learning_data, testing_data)
+    
+    return (learning_data, learning_data) if test_count == 0 else (learning_data, testing_data)

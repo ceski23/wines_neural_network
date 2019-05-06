@@ -23,10 +23,6 @@ class NeuralNetwork:
         self.test_T = T
 
     def sigmoid(self, x, derivative=False):
-        # x[-x < -710.0] = -np.inf
-        # x[-x > 709.78] = np.inf
-        # if np.any(x[x==np.inf]) or np.any(x[x==-np.inf]):
-        #     print('dupa')
         f = 1.0 / (1.0 + np.exp(-x))
         return f if not derivative else f * (1 - f)
     
@@ -43,28 +39,27 @@ class NeuralNetwork:
     def init_biases(self):
         self.biases = []
         layers = [*self.layers, 1]
-        for i, s in enumerate(layers):
-            self.biases.append(np.random.rand(s))
-            # self.biases.append(np.ones((s)))
+        for layer in layers:
+            self.biases.append(np.random.rand(layer))
+            # self.biases.append(np.ones((layer)))
 
     def predict(self, x):
         return self.forward(x)[0][-1][0]
 
     def forward(self, x):
-        y, ss = [x], []
+        y, sum_inputs = [x], []
         for i in range(len(self.layers) + 1):
             f = self.linear if i == len(self.layers) else self.sigmoid
-            s = np.array([sum(y[i] * w) for w in self.weights[i]])      # w - wagi jednego neuronu
-            s += self.biases[i]
+            s = [np.dot(y[i], w) for w in self.weights[i]] + self.biases[i]      # [sum(y[i] * w) for w in self.weights[i]] + self.biases[i]
             y.append(f(s))
-            ss.append(s)
-        return y, ss
+            sum_inputs.append(s)
+        return y, sum_inputs
 
-    def errors(self, d, y, ss):
+    def errors(self, d, y, sum_inputs):
         delta = [d - y[-1]]
         for k in range(len(self.layers), 0, -1):
-            epsilon = [sum(delta[0] * w) for w in self.weights[k].T]    # w - wagi jednego neuronu
-            delta.insert(0, np.array(epsilon * self.sigmoid(ss[k-1], True)))
+            epsilon = [np.dot(delta[0], w) for w in self.weights[k].T]
+            delta.insert(0, np.array(epsilon * self.sigmoid(sum_inputs[k-1], True)))
         return delta
     
     def test(self, P, T):
@@ -85,12 +80,12 @@ class NeuralNetwork:
         weights = self.weights if weights is None else weights
         
         with open(f'models/{name}.mdl', 'wb') as f:
-            pickle.dump((self.weights, self.layers), f)
+            pickle.dump((self.weights, self.layers, self.biases), f)
             print(f'Zapisano model jako: {name}.mdl')
     
     def load_model(self, path):
         with open(path, 'rb') as f:
-            self.weights, self.layers = pickle.load(f)
+            self.weights, self.layers, self.biases = pickle.load(f)
     
     def start_learning(self, live_plot=False, plot_interval=1, plot_results=False, live_text=False):
         if live_plot:
@@ -108,8 +103,8 @@ class NeuralNetwork:
         last_weights = []
         for epoch in range(self.epochs):
             for x, d in zip(self.P, self.T):
-                y, ss = self.forward(x)
-                delta = self.errors(d, y, ss)
+                y, sum_inputs = self.forward(x)
+                delta = self.errors(d, y, sum_inputs)
                 self.update_weights_and_biases(delta, y)
 
             prediction, cost = self.test(self.test_P, self.test_T)
@@ -119,7 +114,11 @@ class NeuralNetwork:
             self.pks.append(result)
 
             if cost <= self.goal:
-                print(f'Achieved goal with cost: {cost}')
+                print(f'\nAchieved goal with cost: {cost} after {epoch} epochs')
+                break
+
+            if result == 100:
+                print(f'\nAchieved 100%PK after {epoch} epochs')
                 break
 
             if len(self.costs) >= 2:
@@ -138,7 +137,7 @@ class NeuralNetwork:
                 plt.pause(1e-20)
             
             if live_text:
-                print(f'Epoka #{epoch:05d}  Cost: {cost:13.10f}  LR: {self.lr:13.10f}  PK: {result:3d}%', end='\r')
+                print(f'Epoka #{epoch:05d}  Cost: {cost:14.10f}  LR: {self.lr:14.10f}  PK: {result:3d}%', end='\r')
         
         if plot_results:
             plt.plot(prediction)
