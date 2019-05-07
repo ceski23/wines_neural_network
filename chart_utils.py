@@ -29,7 +29,7 @@ def surface_chart(data_path, label_x, label_y, label_z):
         set_y, size = set(), 0
 
         for line in f:
-            x, y, z = [int(s) for s in line.split(';')]
+            x, y, z = [float(s) for s in line.split(';')]
             set_y.add(y)
             X.append(x)
             Y.append(y)
@@ -50,10 +50,10 @@ def surface_chart(data_path, label_x, label_y, label_z):
     ax.set_xlabel(label_x)
     ax.set_ylabel(label_y)
     ax.set_zlabel(label_z, rotation='vertical')
-    ax.set_zlim(0, 100)
+    # ax.set_zlim(0, 100)
     ax.set_xticks(data_1[0])
     ax.set_yticks(data_2[:,0])
-    ax.plot_surface(data_1, data_2, data_3, rstride=1, cstride=1, cmap='inferno', edgecolor='none')
+    ax.plot_surface(data_1, data_2, Z, rstride=1, cstride=1, cmap='inferno', edgecolor='none')
     ax.scatter(X, Y, data_3, c='r', s=50, alpha=0.5)
 
     plt.show()
