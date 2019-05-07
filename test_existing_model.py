@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import neural_network as nn
+from data_loader import load_wine
 
 
 if __name__ == "__main__":
     net = nn.NeuralNetwork(None, None, None, None, None, None, None)
-    net.load_model('models/004405_16_12.mdl')
+    net.load_model('models/000100_10_6.mdl')
 
     plt.figure()
     for i in range(12):

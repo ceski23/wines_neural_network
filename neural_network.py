@@ -3,6 +3,8 @@ import numpy as np
 import pickle
 import math
 
+from nguyen_widrow import initnw
+
 
 class NeuralNetwork:
     def __init__(self, lr, epochs, layers, err_ratio, lr_inc, lr_dec, goal):
@@ -13,6 +15,7 @@ class NeuralNetwork:
         self.lr_inc = lr_inc
         self.lr_dec = lr_dec
         self.goal = goal
+        self.weights = None
     
     def feed_training_data(self, P, T):
         self.P = P
@@ -22,26 +25,28 @@ class NeuralNetwork:
         self.test_P = P
         self.test_T = T
 
-    def sigmoid(self, x, derivative=False):
-        f = 1.0 / (1.0 + np.exp(-x))
-        return f if not derivative else f * (1 - f)
+    def activation(self, x, derivative=False):
+        return np.tanh(x) if not derivative else 1 - np.tanh(x)**2
+        # f = 1.0 / (1.0 + np.exp(-x))
+        # return f if not derivative else f * (1 - f)
     
     def linear(self, x, derivative=False):
         return 1 if derivative else x
 
-    def init_weights(self):
-        self.weights = []
+    def init_weights_and_biases(self):
+        self.weights, self.biases = [], []
         sizes = [self.P.shape[1], *self.layers, 1]
-        for i in range(1, len(sizes)):
-            self.weights.append(np.random.rand(sizes[i], sizes[i-1]))
-            # self.weights.append(np.ones((sizes[i], sizes[i-1])))
 
-    def init_biases(self):
-        self.biases = []
-        layers = [*self.layers, 1]
-        for layer in layers:
-            self.biases.append(np.random.rand(layer))
-            # self.biases.append(np.ones((layer)))
+        for i in range(1, len(sizes)):
+            w, b = initnw(sizes[i], sizes[i-1])
+            self.weights.append(w)
+            self.biases.append(b)
+
+    # def init_biases(self):
+    #     self.biases = []
+    #     layers = [*self.layers, 1]
+    #     for layer in layers:
+    #         self.biases.append(np.random.rand(layer))
 
     def predict(self, x):
         return self.forward(x)[0][-1][0]
@@ -49,7 +54,7 @@ class NeuralNetwork:
     def forward(self, x):
         y, sum_inputs = [x], []
         for i in range(len(self.layers) + 1):
-            f = self.linear if i == len(self.layers) else self.sigmoid
+            f = self.linear if i == len(self.layers) else self.activation
             s = [np.dot(y[i], w) for w in self.weights[i]] + self.biases[i]      # [sum(y[i] * w) for w in self.weights[i]] + self.biases[i]
             y.append(f(s))
             sum_inputs.append(s)
@@ -59,7 +64,7 @@ class NeuralNetwork:
         delta = [d - y[-1]]
         for k in range(len(self.layers), 0, -1):
             epsilon = [np.dot(delta[0], w) for w in self.weights[k].T]
-            delta.insert(0, np.array(epsilon * self.sigmoid(sum_inputs[k-1], True)))
+            delta.insert(0, np.array(epsilon * self.activation(sum_inputs[k-1], True)))
         return delta
     
     def test(self, P, T):
@@ -80,12 +85,12 @@ class NeuralNetwork:
         weights = self.weights if weights is None else weights
         
         with open(f'models/{name}.mdl', 'wb') as f:
-            pickle.dump((self.weights, self.layers, self.biases), f)
+            pickle.dump((self.weights, self.layers, self.biases, self.lr), f)
             print(f'Zapisano model jako: {name}.mdl')
     
     def load_model(self, path):
         with open(path, 'rb') as f:
-            self.weights, self.layers, self.biases = pickle.load(f)
+            self.weights, self.layers, self.biases, self.lr = pickle.load(f)
     
     def start_learning(self, live_plot=False, plot_interval=1, plot_results=False, live_text=False):
         if live_plot:
@@ -96,8 +101,9 @@ class NeuralNetwork:
             line, = axes.plot([], [], 'r-')
             line.set_xdata(range(self.test_T.shape[0]))
 
-        self.init_weights()
-        self.init_biases()
+        if self.weights is None:
+            self.init_weights_and_biases()
+
         self.costs, self.pks = [], []
 
         last_weights = []
@@ -117,9 +123,9 @@ class NeuralNetwork:
                 print(f'\nAchieved goal with cost: {cost} after {epoch} epochs')
                 break
 
-            if result == 100:
-                print(f'\nAchieved 100%PK after {epoch} epochs')
-                break
+            # if result == 100:
+            #     print(f'\nAchieved 100%PK after {epoch} epochs')
+            #     break
 
             if len(self.costs) >= 2:
                 if self.costs[-1] > self.costs[-2] * self.err_ratio:
@@ -144,7 +150,9 @@ class NeuralNetwork:
             plt.plot(self.test_T)
 
             plt.figure()
+            plt.title('Cost')
             plt.plot(self.costs)
 
             plt.figure()
+            plt.title('% PK')
             plt.plot(self.pks)

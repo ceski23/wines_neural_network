@@ -29,7 +29,7 @@ def load_wine(test_count):
         wines = np.array([list(map(float, x.strip().split(','))) for x in f])
         np.random.shuffle(wines)
         a = int((wines.shape[0] / 100) * test_count)
-        wines[:, 1:] = normalize(wines[:, 1:].T).T
+        wines[:, 1:] = normalize(wines[:, 1:].T, -1, 1).T
 
         test_wines = wines#[:a]
         test_wines = test_wines[test_wines[:,0].argsort()]

@@ -3,14 +3,14 @@ import neural_network as nn
 from time import time
 import multiprocessing as mp
 from data_loader import load_wine
-from chart_utils import neurons_surface_chart
+from chart_utils import surface_chart
 
 
 def chart_job(s, i, j):
     test = False
     while not test:
         learning_data, testing_data = load_wine(test_count=20)
-        net = nn.NeuralNetwork(0.01, int((s[0]*s[1])**2), [*s], 1.04, 1.05, 0.7, 0.020)       # int((s[0]*s[1])*5)
+        net = nn.NeuralNetwork(0.01, 2000, [*s], 1.04, 1.05, 0.7, 0.020)       # int((s[0]*s[1])*5)
         net.feed_training_data(*learning_data)
         net.feed_test_data(*testing_data)
         net.start_learning()
@@ -29,8 +29,9 @@ def chart_job_callback(x):
 
 
 if __name__ == "__main__":
+    a, b = range(1, 10), range(1, 10)
     # a, b = range(5, 20), range(1, 6)
-    a, b = range(10, 30), range(1, 10)
+    # a, b = range(10, 30), range(1, 10)
 
     S1, S2 = np.meshgrid(a, b)
     c, t = 1, len(a) * len(b)
@@ -55,4 +56,4 @@ if __name__ == "__main__":
         for x, y, z in zip(S1.flatten(), S2.flatten(), PK.flatten()):
             f.write(f'{x};{y};{z}\n')
 
-    neurons_surface_chart('neurons_chart_data.csv')
+    surface_chart('neurons_chart_data.csv', 'S1', 'S2', '% PK')

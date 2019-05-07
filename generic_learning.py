@@ -4,18 +4,15 @@ import neural_network as nn
 from time import time
 from data_loader import load_wine, load_zoo
 
-# np.seterr('raise')
 
-
-if __name__ == "__main__":    
+if __name__ == "__main__":
     learning_data, testing_data = load_wine(test_count=20)
-    # learning_data, testing_data = load_zoo(test_count=20)
     
-    net = nn.NeuralNetwork(0.05, 10000, [5, 2], 1.04, 1.05, 0.7, 0.020)
+    net = nn.NeuralNetwork(0.01, 10000, [10, 6], 1.04, 1.05, 0.7, 0.020)
     net.feed_training_data(*learning_data)
     net.feed_test_data(*testing_data)
     s = time()
-    net.start_learning(live_text=True, live_plot=True)
+    net.start_learning(live_text=True, live_plot=False, plot_results=True)
     e = time()
     print(f'\nTime: {e-s} sec')
     net.save_model()
