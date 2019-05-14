@@ -2,19 +2,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import neural_network as nn
 from data_loader import load_wine
-from time import time
 
 
 if __name__ == "__main__":
     learning_data, testing_data = load_wine()
-    net = nn.NeuralNetwork(None, 10000, None, 1.04, 1.05, 0.7, 0.00005)
+    net = nn.NeuralNetwork(0.01, 20, [8, 2], 1.04, 1.05, 0.7, 0.20)
+    # net = nn.NeuralNetwork(0.01, 10000, [20, 10], 1.04, 1.05, 0.7, 0.020)
     net.feed_training_data(*learning_data)
     net.feed_test_data(*testing_data)
-    net.load_model('models/000010_10_6.mdl')
-
-    s = time()
     net.start_learning(live_text=True, live_plot=False, plot_results=True)
-    e = time()
 
-    print(f'\nTime: {e-s} sec')
-    net.save_model()
+    plt.show()

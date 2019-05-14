@@ -6,9 +6,9 @@ from data_loader import load_wine, load_zoo
 
 
 if __name__ == "__main__":
-    learning_data, testing_data = load_wine(test_count=20)
+    learning_data, testing_data = load_wine()
     
-    net = nn.NeuralNetwork(0.01, 10000, [10, 6], 1.04, 1.05, 0.7, 0.020)
+    net = nn.NeuralNetwork(0.01, 1000, [10, 6], 1.04, 1.05, 0.7, 0.020)
     net.feed_training_data(*learning_data)
     net.feed_test_data(*testing_data)
     s = time()
@@ -20,8 +20,8 @@ if __name__ == "__main__":
 
     plt.figure()
     for i in range(12):
-        P, T = load_wine(test_count=20)[1]
-        prediction, cost = net.test(P, T)
+        P, T = load_wine()[1]
+        prediction, cost, pk = net.test(P, T)
 
         plt.subplot(3, 4, i+1)
         plt.grid(linestyle='--')

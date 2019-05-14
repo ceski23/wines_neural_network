@@ -8,16 +8,4 @@ def initnw(layer_size, input_size):
     w = beta * w_rand
     b = beta * np.linspace(-1, 1, layer_size) * np.sign(w[:, 0])
 
-    # amin, amax = -1, 1
-    # x = 0.5 * (amax - amin)
-    # y = 0.5 * (amax + amin)
-    # w = x * w
-    # b = x * b + y
-
-    # minmax = np.full((input_size, 2), np.array([-1, 1]))
-    # x = 2. / (minmax[:, 1] - minmax[:, 0])
-    # y = 1. - minmax[:, 1] * x
-    # w = w * x
-    # b = np.dot(w, y) + b
-
     return w, b

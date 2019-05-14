@@ -24,14 +24,14 @@ def load_zoo(test_count):
     return [learning_data, test_data]
 
 
-def load_wine(test_count):
+def load_wine(test_count=20):
     with open('wine.csv') as f:
         wines = np.array([list(map(float, x.strip().split(','))) for x in f])
         np.random.shuffle(wines)
         a = int((wines.shape[0] / 100) * test_count)
         wines[:, 1:] = normalize(wines[:, 1:].T, -1, 1).T
 
-        test_wines = wines#[:a]
+        test_wines = wines[:a]
         test_wines = test_wines[test_wines[:,0].argsort()]
         testing_data = (test_wines[:, 1:], test_wines[:, 0])
 
@@ -39,4 +39,4 @@ def load_wine(test_count):
         # wines = wines[wines[:,0].argsort()]
         learning_data = (wines[:, 1:], wines[:, 0])
     
-    return (learning_data, learning_data) if test_count == 0 else (learning_data, testing_data)
+    return (learning_data, testing_data)
