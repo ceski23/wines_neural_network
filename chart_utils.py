@@ -58,8 +58,8 @@ def surface_chart(data_path, label_x, label_y, label_z):
     # ax.set_zlim(0, 100)
     ax.set_xticks(data_1[0])
     ax.set_yticks(data_2[:,0])
-    ax.plot_surface(data_1, data_2, Z, rstride=1, cstride=1, cmap='inferno', edgecolor='none')
-    ax.scatter(X, Y, data_3, c='r', s=50, alpha=0.5)
+    ax.plot_surface(data_1, data_2, Z, rstride=1, cstride=1, cmap='viridis', edgecolor='none')
+    # ax.scatter(X, Y, data_3, c='r', s=50, alpha=0.5)
 
     plt.show()
 
