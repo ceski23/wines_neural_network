@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def normalize(data, min_v=0, max_v=1):
+def normalize(data, min_v=-1, max_v=1):
     '''Normalizuje dane do podanego zakresu'''
     for i in range(data.shape[0]):
         data[i] = ((data[i] - data[i].min()) / (data[i].max() - data[i].min())) * (max_v - min_v) + min_v
@@ -29,7 +29,7 @@ def load_wine(test_count=20):
         wines = np.array([list(map(float, x.strip().split(','))) for x in f])
         np.random.shuffle(wines)
         a = int((wines.shape[0] / 100) * test_count)
-        wines[:, 1:] = normalize(wines[:, 1:].T, -1, 1).T
+        wines[:, 1:] = normalize(wines[:, 1:].T).T
 
         test_wines = wines[:a]
         test_wines = test_wines[test_wines[:,0].argsort()]

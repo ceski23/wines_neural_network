@@ -97,14 +97,14 @@ class NeuralNetwork:
         with open(path, 'rb') as f:
             self.weights, self.layers, self.biases, self.lr = pickle.load(f)
     
-    def update_learning_rate(self):
+    def update_learning_rate(self, cost):
         if len(self.costs) > 1:
-            if self.costs[-1] > self.costs[-2] * self.err_ratio:
+            if cost > self.costs[-1] * self.err_ratio:
                 self.lr = max(1e-10, self.lr * self.lr_dec)
                 self.weights = self.last_weights
                 self.biases = self.last_biases
                 return False
-            elif self.costs[-1] < self.costs[-2]:
+            elif cost < self.costs[-1]:
                 self.lr = min(1 - 1e-10, self.lr * self.lr_inc)
         return True
 
@@ -131,7 +131,7 @@ class NeuralNetwork:
 
             prediction, cost, pk = self.test(self.test_P, self.test_T)
 
-            if self.update_learning_rate():
+            if self.update_learning_rate(cost):
                 self.costs.append(cost)
                 self.pks.append(pk)
             else:
