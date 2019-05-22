@@ -5,7 +5,6 @@ import math
 
 from nguyen_widrow import initnw
 
-
 class NeuralNetwork:
     def __init__(self, lr, epochs, layers, err_ratio, lr_inc, lr_dec, goal):
         self.lr = lr
@@ -25,31 +24,31 @@ class NeuralNetwork:
         self.test_P = P
         self.test_T = T
 
-    def activation(self, x, derivative=False):
-        return np.tanh(x) if not derivative else 1 - np.tanh(x)**2
+    def activation(self, x, derivative=False, beta=1):
+        return np.tanh(beta * x) if not derivative else 1 - np.tanh(beta * x)**2
     
     def linear(self, x, derivative=False):
         return 1 if derivative else x
 
-    def init_weights_and_biases(self):
-        self.weights, self.biases = [], []
-        sizes = [self.P.shape[1], *self.layers, 1]
-
-        for i in range(1, len(sizes)):
-            self.weights.append(np.random.rand(sizes[i], sizes[i-1]))
-            self.biases.append(np.random.rand(sizes[i]))
-
     # def init_weights_and_biases(self):
     #     self.weights, self.biases = [], []
-    #     sizes = [self.P.shape[1], *self.layers]
+    #     sizes = [self.P.shape[1], *self.layers, 1]
 
     #     for i in range(1, len(sizes)):
-    #         w, b = initnw(sizes[i], sizes[i-1])
-    #         self.weights.append(w)
-    #         self.biases.append(b)
+    #         self.weights.append(np.random.rand(sizes[i], sizes[i-1]))
+    #         self.biases.append(np.random.rand(sizes[i]))
 
-    #     self.weights.append(np.random.rand(1, sizes[-1]))
-    #     self.biases.append(np.random.rand(1))
+    def init_weights_and_biases(self):
+        self.weights, self.biases = [], []
+        sizes = [self.P.shape[1], *self.layers]
+
+        for i in range(1, len(sizes)):
+            w, b = initnw(sizes[i], sizes[i-1])
+            self.weights.append(w)
+            self.biases.append(b)
+
+        self.weights.append(np.random.rand(1, sizes[-1]))
+        self.biases.append(np.random.rand(1))
 
     def predict(self, x):
         return self.forward(x)[0][-1][0]
@@ -74,7 +73,7 @@ class NeuralNetwork:
         prediction = [self.predict(x) for x in P]
         error = np.array([d - y for y, d in zip(prediction, T)])
         cost = (error**2).sum()
-        pk = int((np.abs(error) < 0.25).sum() / len(error) * 100)
+        pk = int(((error**2) < 0.25).sum() / len(error) * 100)
         return prediction, cost, pk
 
     def update_weights_and_biases(self, delta, x):

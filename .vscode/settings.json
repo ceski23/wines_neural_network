@@ -1,3 +1,6 @@
 {
-    "python.pythonPath": "C:\\Users\\ceski\\.virtualenvs\\wines_neural_network-dfltRkKa\\Scripts\\python.exe"
+    "python.pythonPath": "C:\\Users\\ceski\\.virtualenvs\\wines_neural_network-VnunAY43\\Scripts\\python.exe",
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true
 }

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 if __name__ == "__main__":
     start = time()
 
-    a, b = np.arange(1.00, 1.91, 0.1), np.arange(0.5, 1.00, 0.05)
+    a, b = np.arange(1.00, 1.91, 0.1), np.arange(0.5, 0.81, 0.05)
     lr_inc, lr_dec = np.meshgrid(a, b)
     result = np.empty(lr_dec.shape)
 
